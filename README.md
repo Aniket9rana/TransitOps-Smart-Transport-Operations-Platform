@@ -1,343 +1,163 @@
-# TransitOps - Smart Transport Operations Platform
+# TransitOps — Smart Transport Operations Platform
 
-A comprehensive transport operations platform that digitizes vehicle, driver, dispatch, maintenance, and expense management for logistics companies. TransitOps enables organizations to move away from spreadsheets and manual logbooks to a centralized, intelligent system with full operational visibility.
+TransitOps is a fleet operations platform that replaces spreadsheets and manual logbooks with a single, role-aware system for vehicles, drivers, trip dispatch, maintenance, fuel/expenses, and analytics. Every operational rule — dispatch eligibility, capacity checks, automatic status transitions, cost roll-ups, and KPIs — lives in one place and is enforced on the server, so the numbers on the dashboard and the analytics reports are always computed from real records, never hardcoded.
 
-## Problem Statement
+## Stack
 
-Many logistics companies still rely on spreadsheets and manual logbooks to manage their transport operations, leading to:
-- Scheduling conflicts
-- Underutilized vehicles
-- Missed maintenance schedules
-- Expired driver licenses
-- Inaccurate expense tracking
-- Poor operational visibility
+- **Framework:** Next.js 16 (App Router, Server Components, Server Actions, Route Handlers) on React 19
+- **Language:** TypeScript
+- **Database:** SQLite via **Prisma 7** (better-sqlite3 driver adapter)
+- **Auth:** JWT sessions signed with `jose` (HttpOnly cookie), bcrypt password hashing, failed-attempt lockout
+- **UI:** Tailwind CSS v4, Base UI primitives, dark-mode-only design system with status/brand tokens
+- **Charts:** Recharts · **PDF export:** jsPDF + jspdf-autotable · **Toasts:** Sonner
 
-## Solution
+---
 
-TransitOps provides a centralized platform that allows organizations to manage the complete lifecycle of their transport operations—from vehicle registration and driver management to dispatching, maintenance, fuel logging, and analytics.
+## Setup & Run
 
-## Target Users
-
-- **Fleet Manager**: Oversees fleet assets, maintenance, vehicle lifecycle, and operational efficiency
-- **Driver**: Creates trips, assigns vehicles and drivers, and monitors active deliveries
-- **Safety Officer**: Ensures driver compliance, tracks license validity, and monitors safety scores
-- **Financial Analyst**: Reviews operational expenses, fuel consumption, maintenance costs, and profitability
-
-## Mandatory Features
-
-### 3.1 Authentication & Authorization
-- Secure login using email and password.
-- Role-Based Access Control (RBAC)
-
-- Only authenticated users can access the application
-
-### 3.2 Dashboard
-Key Performance Indicators:
-- Active Vehicles
-- Available Vehicles
-- Vehicles in Maintenance
-- Active Trips
-- Pending Trips
-- Drivers On Duty
-- Fleet Utilization (%)
-
-Features:
-- Filters by vehicle type, status, and region
-- Real-time KPI updates
-
-### 3.3 Vehicle Registry
-Manage vehicle information:
-- Registration Number (unique identifier)
-- Vehicle Name/Model
-- Type
-- Maximum Load Capacity
-- Odometer
-- Acquisition Cost
-- Status (Available, On Trip, In Shop, Retired)
-
-### 3.4 Driver Management
-Maintain driver profiles:
-- Name
-- License Number
-- License Category
-- License Expiry Date
-- Contact Number
-- Safety Score
-- Status (Available, On Trip, Off Duty, Suspended)
-
-### 3.5 Trip Management
-Create and manage trips:
-- Source and destination
-- Vehicle assignment
-- Driver assignment
-- Cargo weight
-- Planned distance
-- Trip lifecycle: Draft → Dispatched → Completed → Cancelled
-
-### 3.6 Maintenance Management
-- Create maintenance records for vehicles
-- Automatic status change to "In Shop" when vehicle enters maintenance
-- Automatic removal from driver selection pool
-- Close maintenance records to restore vehicle to available status
-
-### 3.7 Fuel & Expense Management
-- Record fuel logs (liters, cost, date)
-- Track other expenses (tolls, maintenance, etc.)
-- Automatic operational cost computation (Fuel + Maintenance)
-- Per-vehicle cost tracking
-
-### 3.8 Reports & Analytics
-- Fuel Efficiency (Distance/Fuel ratio)
-- Fleet Utilization metrics
-- Operational Cost analysis
-- Vehicle ROI: `(Revenue - (Maintenance + Fuel)) / Acquisition Cost`
-- CSV export support
-- PDF export (optional)
-
-## Business Rules (Non-Negotiable)
-
-1. **Vehicle Registration**: Registration number must be unique
-2. **Dispatch Constraints**: Retired or In Shop vehicles must never appear in dispatch selection
-3. **Driver Eligibility**: Drivers with expired licenses or Suspended status cannot be assigned to trips
-4. **Resource Availability**: A driver or vehicle already marked "On Trip" cannot be assigned to another trip
-5. **Cargo Validation**: Cargo weight must not exceed the vehicle's maximum load capacity
-6. **Status Automation**:
-   - Dispatching a trip → both vehicle and driver status become "On Trip"
-   - Completing a trip → both vehicle and driver status return to "Available"
-   - Cancelling a dispatched trip → both restore to "Available"
-   - Creating maintenance record → vehicle status becomes "In Shop"
-   - Closing maintenance → vehicle returns to "Available" (unless retired)
-
-## Example Workflow
-
-1. Register vehicle 'Van-05' with 500 kg capacity, Status = Available
-2. Register driver 'Alex' with valid driving license
-3. Create trip with Cargo Weight = 450 kg
-4. System validates 450 kg ≤ 500 kg and allows dispatch
-5. Vehicle and Driver status automatically become "On Trip"
-6. Complete trip by entering final odometer and fuel consumed
-7. System marks both Vehicle and Driver as "Available"
-8. Create maintenance record (e.g., Oil Change)
-9. Vehicle status automatically becomes "In Shop" and is hidden from dispatch
-10. Reports update with operational cost and fuel efficiency data
-
-## Bonus Features
-
-- Charts and visual analytics
-- PDF export capability
-- Email reminders for expiring licenses
-- Vehicle document management
-- Advanced search, filters, and sorting
-- Dark mode support
-
-## Database Entities
-
-- **Users**: Authentication and authorization
-- **Roles**: RBAC definitions (Fleet Manager, Driver, Safety Officer, Financial Analyst)
-- **Vehicles**: Fleet asset registry
-- **Drivers**: Driver profiles and credentials
-- **Trips**: Trip records and lifecycle management
-- **Maintenance Logs**: Vehicle maintenance history
-- **Fuel Logs**: Fuel consumption tracking
-- **Expenses**: Operational expenses (tolls, repairs, etc.)
-
-## Tech Stack
-
-- **Frontend**: React.js with responsive design
-- **Backend**: Node.js/Express or similar REST API
-- **Database**: PostgreSQL/MongoDB
-- **Authentication**: JWT-based authentication
-- **Deployment**: Docker containerization recommended
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v14+)
-- npm or yarn
-- PostgreSQL/MongoDB
-- Git
-
-### Installation
+**Prerequisites:** Node.js 20+ and npm.
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd TransitOps-Smart-Transport-Operations-Platform
-
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env
+# 2. Create a .env file in the project root (see below)
 
-# Initialize database
-npm run db:setup
+# 3. Generate the Prisma client, create the SQLite schema, and seed demo data
+npm run demo:reset
 
-# Start development server
+# 4. Start the dev server  ->  http://localhost:3000
 npm run dev
 ```
 
-### Running Tests
-```bash
-npm test
+**`.env`** (required — the app needs a DB URL and an auth secret):
+
+```env
+DATABASE_URL="file:./prisma/dev.db"
+AUTH_SECRET="change-me-to-any-long-random-string"
 ```
 
-### Building for Production
+### Individual database commands
+
+| Command | What it does |
+| --- | --- |
+| `npm run db:generate` | Generate the Prisma client into `lib/generated/prisma` |
+| `npm run db:push` | Create/sync the SQLite schema from `prisma/schema.prisma` |
+| `npm run db:seed` | Wipe all rows and reseed the pristine demo dataset (idempotent) |
+| **`npm run demo:reset`** | **One command** → generate + push + seed. Returns the app to a clean, fully-populated demo state. Safe to run mid-presentation. |
+
+### Production build
+
 ```bash
-npm run build
-npm run start
+npm run build && npm run start
 ```
+
+---
+
+## Demo Credentials
+
+All four accounts share the password **`transit123`**.
+
+| Role | Email | Sees in the sidebar |
+| --- | --- | --- |
+| **Fleet Manager** (Maya R.) | `maya.r@transitops.in` | Dashboard, Fleet, Drivers, Maintenance, **Analytics**, **Settings (edit)** |
+| **Dispatcher** (Raven K.) | `raven.k@transitops.in` | Dashboard, Fleet (view), **Trips**, Maintenance (view), Settings (view) |
+| **Safety Officer** (Sana O.) | `sana.o@transitops.in` | Dashboard, **Drivers**, Trips (view), Settings (view) |
+| **Financial Analyst** (Farid A.) | `farid.a@transitops.in` | Dashboard, Fleet (view), Maintenance (view), **Fuel & Expenses**, **Analytics**, Settings (view) |
+
+> The **Dashboard** is view-only for every role. **Analytics** is reachable only by Fleet Manager and Financial Analyst — Dispatcher and Safety Officer have no Analytics nav item and are redirected if they try the URL directly (enforced in `proxy.ts` middleware). **Settings** is visible to all but editable only by the Fleet Manager.
+
+---
+
+## 🏆 Judge Demo Script (the winning sequence)
+
+### 1 — RBAC is real (log in as different roles)
+- Log in as **Farid (Financial Analyst)** → sidebar shows **Analytics** + **Fuel & Expenses**, no Trips.
+- Log out, log in as **Raven (Dispatcher)** → sidebar shows **Trips**, **no Analytics**. Paste `/analytics` in the URL → you're bounced back to the Dashboard. This is defense-in-depth: the nav is hidden *and* the server refuses.
+
+### 2 — Trip lifecycle & automatic status transitions (as Dispatcher, Raven)
+- Go to **Trips**. Create a trip and pick a heavy cargo weight that exceeds the vehicle's max load → **capacity-exceeded block** stops the dispatch with the exact overage.
+- Fix the weight and **Dispatch** → the assigned **vehicle and driver both auto-flip to "On Trip"** (check the Fleet/Drivers screens).
+- **Complete** the trip (enter final odometer + fuel) → vehicle and driver **flip back to "Available"**, a **FuelLog is written**, and the **odometer advances**.
+- **Cancel** a different dispatched trip → its vehicle and driver are **restored to "Available"**.
+
+### 3 — The double-assignment block (as Dispatcher)
+- Create **two DRAFT trips that both select the same available vehicle**.
+- Dispatch the first (vehicle → On Trip). Now dispatch the second → **blocked**: the vehicle is already on a trip. The re-check happens *inside the database transaction*, so two simultaneous dispatches can't both win the race.
+
+### 4 — Maintenance removes a vehicle from the pool (as Fleet Manager, Maya)
+- Go to **Maintenance**, open a service record for an available vehicle → its status becomes **"In Shop"**.
+- Switch to **Trips** → that vehicle has **vanished from the dispatch selection pool** (In-Shop and Retired vehicles are never dispatchable). Close the record → it returns to Available.
+
+### 5 — Live Dashboard, Analytics & exports (as Fleet Manager or Financial Analyst)
+- **Dashboard:** 7 live KPIs computed from real data; an **amber license-expiry banner** ("driver license(s) expired or expiring soon" → links to Drivers, because John's license is expired). Change the **Vehicle Type / Status / Region** filters → the vehicle KPIs and the Vehicle-Status bars **recompute server-side** and the Recent Trips list re-scopes. **ETA** is derived, not stored.
+- **Analytics:** 4 headline metric cards, a **Monthly Revenue** bar chart, **Top Costliest Vehicles** bars, and a sortable per-vehicle report. Click **Export CSV** (real `.csv` download) and **Export PDF** (real titled PDF with the headline KPIs + per-vehicle table).
+- **Settings:** as Fleet Manager, change the **Depot Name** and Save → it immediately appears in the **top bar** (proof the setting is real). Log in as another role → the same form is **read-only**.
+
+---
+
+## Architecture — deliberate engineering
+
+- **Single-source-of-truth rule libraries.** Every business rule is written once and imported everywhere:
+  - `lib/permissions.ts` — the role→module RBAC matrix, `can()`, `visibleNavFor()`.
+  - `lib/eligibility.ts` — vehicle/driver dispatch eligibility and block reasons.
+  - `lib/trip-lifecycle.ts` — legal trip transitions, capacity check, derived ETA, dispatch re-validation.
+  - `app/actions/maintenance.ts` — maintenance open/close and the vehicle-status side effects.
+  - `lib/costs.ts` — operational cost (Fuel + Maintenance), revenue, and per-vehicle roll-ups.
+  - `lib/metrics.ts` — **every dashboard and analytics KPI**, each with a documented formula. The Dashboard and Analytics screens import the *same* `dashboardKpis()`/utilization function, so overlapping numbers can never disagree.
+- **Transaction-safe status transitions.** Dispatch/complete/cancel run inside `prisma.$transaction`, and eligibility is **re-validated inside the transaction** right before the write — so the "no double-assignment" and "capacity" invariants hold even under concurrent requests, not just at form-submit time.
+- **Defense-in-depth RBAC.** The client hides what a role can't use (`visibleNavFor`), the `proxy.ts` middleware gates every route by module, and **every server mutation calls `requirePermission(...)` first** (including the CSV export route handler, which returns 403 without analytics access). Hiding a button is a convenience; the server check is the guarantee.
+- **Read-derived analytics.** Phase 6 adds no schema. All KPIs, charts, and exports are computed live from existing Vehicle/Trip/Fuel/Maintenance/Expense records. The wireframe's sample numbers are illustrative; the app shows the real computed values.
+
+---
+
+## ✅ Mandatory Deliverables Checklist
+
+| Deliverable | Where it's implemented |
+| --- | --- |
+| **Responsive web interface** | Dark-mode design system (`app/globals.css`); app shell `app/(app)/layout.tsx` with collapsible mobile drawer (`components/layout/mobile-nav.tsx`); tables scroll horizontally (`components/ui/table.tsx`); responsive KPI grids. |
+| **Authentication with RBAC** | JWT sessions (`lib/session.ts`), login + lockout (`app/actions/auth.ts`, `app/login/`), permission matrix + guards (`lib/permissions.ts`, `lib/rbac.ts`), route middleware (`proxy.ts`). |
+| **CRUD — Vehicles & Drivers** | `app/(app)/fleet/*` + `app/actions/vehicles.ts`; `app/(app)/drivers/*` + `app/actions/drivers.ts`. |
+| **Trip Management with validations** | `app/(app)/trips/*` + `app/actions/trips.ts`; rules in `lib/eligibility.ts` + `lib/trip-lifecycle.ts` (capacity, eligibility, double-assignment). |
+| **Automatic status transitions** | In-transaction status flips on dispatch/complete/cancel (`app/actions/trips.ts`) and maintenance open/close (`app/actions/maintenance.ts`). |
+| **Maintenance workflow** | `app/(app)/maintenance/*` + `app/actions/maintenance.ts` — vehicle → In Shop and removed from dispatch pool; close → Available. |
+| **Fuel & Expense tracking** | `app/(app)/expenses/*` + `app/actions/expenses.ts`; cost roll-ups in `lib/costs.ts`. |
+| **Dashboard with KPIs** | `app/(app)/dashboard/page.tsx` — 7 KPIs, filters, recent trips, vehicle-status bars, license banner; formulas in `lib/metrics.ts`. |
+| **Charts & visual analytics** | `app/(app)/analytics/page.tsx` — Recharts Monthly Revenue chart (`revenue-chart.tsx`) + costliest-vehicle bars (`costliest-vehicles.tsx`). |
+| **CSV export** | Route handler `app/(app)/analytics/export/csv/route.ts` (RBAC-guarded, `text/csv` download) triggered by `export-buttons.tsx`. |
+| **PDF export** | jsPDF + jspdf-autotable in `app/(app)/analytics/export-buttons.tsx` — titled "TransitOps — Fleet Report" with headline KPIs + per-vehicle table. |
+
+### Bonus features delivered
+Charts & visual analytics · PDF export · **in-app license-expiry reminder** (the email-reminder bonus, done in-app as a dashboard banner) · advanced search, filters, and **click-to-sort** on Fleet / Drivers / Analytics tables · **dark mode** (intentional, app-wide) · loading skeletons and friendly empty states throughout.
+
+---
 
 ## Project Structure
 
 ```
-TransitOps-Smart-Transport-Operations-Platform/
-├── src/
-│   ├── components/     # React components
-│   ├── pages/          # Page components
-│   ├── services/       # API services
-│   ├── store/          # State management
-│   ├── utils/          # Utility functions
-│   └── styles/         # CSS/styling
-├── backend/
-│   ├── models/         # Database models
-│   ├── routes/         # API endpoints
-│   ├── controllers/    # Business logic
-│   ├── middleware/     # Auth, validation
-│   └── config/         # Configuration
-├── public/             # Static assets
-├── tests/              # Test files
-├── .env.example        # Environment template
-├── package.json        # Dependencies
-└── README.md          # This file
-```
-
-## Key API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/logout` - User logout
-
-### Vehicles
-- `GET /api/vehicles` - List all vehicles
-- `POST /api/vehicles` - Create new vehicle
-- `PUT /api/vehicles/:id` - Update vehicle
-- `DELETE /api/vehicles/:id` - Delete vehicle
-
-### Drivers
-- `GET /api/drivers` - List all drivers
-- `POST /api/drivers` - Create new driver
-- `PUT /api/drivers/:id` - Update driver
-- `DELETE /api/drivers/:id` - Delete driver
-
-### Trips
-- `GET /api/trips` - List all trips
-- `POST /api/trips` - Create new trip
-- `PUT /api/trips/:id/dispatch` - Dispatch trip
-- `PUT /api/trips/:id/complete` - Complete trip
-- `PUT /api/trips/:id/cancel` - Cancel trip
-
-### Maintenance
-- `GET /api/maintenance` - List maintenance records
-- `POST /api/maintenance` - Create maintenance record
-- `PUT /api/maintenance/:id/close` - Close maintenance
-
-### Fuel & Expenses
-- `POST /api/fuel-logs` - Record fuel consumption
-- `POST /api/expenses` - Record expense
-- `GET /api/reports/fuel-efficiency` - Fuel efficiency report
-- `GET /api/reports/operational-cost` - Operational cost report
-
-## Development Guidelines
-
-### Code Standards
-- Follow ESLint configuration
-- Use TypeScript for type safety
-- Write unit tests for business logic
-- Document complex functions
-
-### Database Migrations
-```bash
-npm run db:migrate
-npm run db:rollback
-```
-
-### Commit Messages
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, etc.
-- Example: `feat: add vehicle registration workflow`
-
-## Deployment
-
-### Docker
-```bash
-docker build -t transitops:latest .
-docker run -p 3000:3000 transitops:latest
-```
-
-### Environment Variables
-Create a `.env` file with:
-```
-DATABASE_URL=postgresql://user:password@localhost:5432/transitops
-JWT_SECRET=your-secret-key
-NODE_ENV=production
-PORT=3000
-```
-
-## Testing
-
-Run the complete test suite:
-```bash
-npm test
-```
-
-Run specific test files:
-```bash
-npm test -- src/__tests__/vehicles.test.ts
-```
-
-Generate coverage report:
-```bash
-npm run test:coverage
+app/
+  (app)/                      # authenticated shell (sidebar + topbar)
+    dashboard/                # Screen 1 — live KPIs, filters, recent trips, status bars, license banner
+    analytics/                # Screen 7 — KPIs, charts, sortable report
+      export/csv/route.ts     #   real CSV download (RBAC-guarded)
+    fleet/  drivers/  trips/  maintenance/  expenses/  settings/
+    layout.tsx  loading.tsx (per route)
+  actions/                    # server actions (auth, vehicles, drivers, trips, maintenance, expenses, settings)
+  icon.tsx                    # generated favicon (amber "T")
+  login/  layout.tsx  globals.css
+components/                   # kpi-card, status-badge, data-table-sort, page-skeleton, layout/*, ui/*
+lib/                          # permissions, rbac, session, eligibility, trip-lifecycle, maintenance,
+                              # costs, metrics, org-settings, format, status, prisma
+prisma/                       # schema.prisma, seed.ts, migrations
+proxy.ts                      # Next.js 16 middleware (route-level RBAC)
 ```
 
 ## Troubleshooting
 
-### Database Connection Issues
-- Verify database is running
-- Check DATABASE_URL in .env
-- Run `npm run db:setup` to initialize
-
-### Authentication Errors
-- Ensure JWT_SECRET is set
-- Check token expiry settings
-- Clear browser cache and cookies
-
-### Vehicle/Driver Not Appearing in Dispatch
-- Verify status is "Available" (not "On Trip", "In Shop", or "Retired")
-- Check if driver license has expired
-- Ensure no maintenance records are active
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m 'feat: your feature'`
-3. Push to branch: `git push origin feature/your-feature`
-4. Open a Pull Request
-
-## License
-
-[Specify your license here]
-
-## Support
-
-For issues, questions, or feature requests, please open an issue on GitHub or contact the development team.
-
-## References
-
-- [UI Mockup](https://link.excalidraw.com/l/65VNwvy7c4X/1FHGDNgD2td)
-- Project Specification: `TransitOps Smart Transport Operations Platform (1).pdf`
+- **`AUTH_SECRET environment variable is not set`** → create `.env` (see Setup) and restart the dev server.
+- **Empty dashboard / analytics** → run `npm run demo:reset` to (re)create and seed the database.
+- **Vehicle/driver missing from dispatch** → it's On Trip, In Shop, or Retired, or the driver's license expired/suspended — by design (`lib/eligibility.ts`).
 
 ---
 
-**Built with ❤️ for smarter transport operations**
+**Built for smarter transport operations.**
