@@ -36,3 +36,14 @@ export function formatMonthYear(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${month}/${date.getFullYear()}`;
 }
+
+const dateFormatter = new Intl.DateTimeFormat("en-IN", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+/** Formats a date as "10 Jul 2026" for log/table rows. */
+export function formatDate(date: Date): string {
+  return dateFormatter.format(date);
+}

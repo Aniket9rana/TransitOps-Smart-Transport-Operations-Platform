@@ -447,6 +447,28 @@ async function main() {
     },
   });
 
+  // Toll + Misc on the completed trip's vehicle (VAN-05 / TR002) so the OTHER
+  // column and COST SUMMARY are well populated for the demo.
+  await prisma.expense.create({
+    data: {
+      vehicleId: vehicles["VAN-05"].id,
+      tripId: tr002.id,
+      type: ExpenseType.TOLL,
+      amount: 340,
+      note: "Bagodara toll plaza",
+    },
+  });
+
+  await prisma.expense.create({
+    data: {
+      vehicleId: vehicles["VAN-05"].id,
+      tripId: tr002.id,
+      type: ExpenseType.MISC,
+      amount: 150,
+      note: "Loading assistance",
+    },
+  });
+
   await prisma.orgSettings.create({
     data: {
       depotName: "Gandhinagar Depot GJ4",
