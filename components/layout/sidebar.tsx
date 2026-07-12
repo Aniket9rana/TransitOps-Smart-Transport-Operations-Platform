@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "@/components/layout/nav-items";
+import { visibleNavFor } from "@/lib/permissions";
+import type { Role } from "@/lib/generated/prisma/enums";
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname();
+  const navItems = visibleNavFor(role);
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
@@ -20,7 +22,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;

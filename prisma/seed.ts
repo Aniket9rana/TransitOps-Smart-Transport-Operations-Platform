@@ -1,5 +1,7 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import {
+  Role,
   VehicleType,
   VehicleStatus,
   LicenseCategory,
@@ -10,7 +12,10 @@ import {
 } from "../lib/generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
+const DEMO_PASSWORD = "transit123";
+
 async function clear() {
+  await prisma.user.deleteMany();
   await prisma.expense.deleteMany();
   await prisma.fuelLog.deleteMany();
   await prisma.maintenanceLog.deleteMany();
@@ -20,8 +25,31 @@ async function clear() {
   await prisma.orgSettings.deleteMany();
 }
 
+async function seedUsers() {
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  const userData = [
+    { name: "Raven K.", email: "raven.k@transitops.in", role: Role.DISPATCHER },
+    { name: "Maya R.", email: "maya.r@transitops.in", role: Role.FLEET_MANAGER },
+    { name: "Sana O.", email: "sana.o@transitops.in", role: Role.SAFETY_OFFICER },
+    { name: "Farid A.", email: "farid.a@transitops.in", role: Role.FINANCIAL_ANALYST },
+  ];
+
+  for (const data of userData) {
+    await prisma.user.create({
+      data: {
+        ...data,
+        passwordHash,
+        failedAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+  }
+}
+
 async function main() {
   await clear();
+  await seedUsers();
 
   const vehicleData = [
     {
@@ -72,7 +100,8 @@ async function main() {
       odometer: 95000,
       acquisitionCost: 3200000,
       region: "Vadodara",
-      status: VehicleStatus.AVAILABLE,
+      // On TR009 (DISPATCHED) below — must stay ON_TRIP to match that trip.
+      status: VehicleStatus.ON_TRIP,
     },
     {
       registrationNumber: "GJ01AC450",
@@ -184,7 +213,8 @@ async function main() {
       licenseExpiry: new Date("2028-02-15"),
       contact: "98123xxxxx",
       safetyScore: 90,
-      status: DriverStatus.AVAILABLE,
+      // On TR009 (DISPATCHED) below — must stay ON_TRIP to match that trip.
+      status: DriverStatus.ON_TRIP,
     },
     {
       name: "Farah",
@@ -292,8 +322,60 @@ async function main() {
       cargoWeightKg: 500,
       plannedDistanceKm: 25,
       status: TripStatus.CANCELLED,
+      cancelReason: "Vehicle went to shop",
       createdAt: new Date("2026-07-09"),
       dispatchedAt: new Date("2026-07-09"),
+    },
+  });
+
+  // Extra historical trips so a couple of drivers show a believable
+  // (non-100%/non-0%) TRIP COMPL. percentage on the Drivers screen.
+  await prisma.trip.create({
+    data: {
+      code: "TR007",
+      source: "Ahmedabad Hub",
+      destination: "Gandhinagar Depot",
+      vehicleId: vehicles["VAN-05"].id,
+      driverId: drivers["Alex"].id,
+      cargoWeightKg: 380,
+      plannedDistanceKm: 45,
+      status: TripStatus.COMPLETED,
+      finalOdometer: 73500,
+      fuelConsumedLiters: 8,
+      revenue: 5200,
+      createdAt: new Date("2026-06-20"),
+      dispatchedAt: new Date("2026-06-21"),
+      completedAt: new Date("2026-06-21"),
+    },
+  });
+
+  await prisma.trip.create({
+    data: {
+      code: "TR008",
+      source: "Ahmedabad Hub",
+      destination: "Vatva Industrial Area",
+      vehicleId: vehicles["VAN-05"].id,
+      driverId: drivers["Alex"].id,
+      cargoWeightKg: 300,
+      plannedDistanceKm: 20,
+      status: TripStatus.CANCELLED,
+      createdAt: new Date("2026-06-25"),
+      dispatchedAt: new Date("2026-06-25"),
+    },
+  });
+
+  await prisma.trip.create({
+    data: {
+      code: "TR009",
+      source: "Vadodara Depot",
+      destination: "Ahmedabad Hub",
+      vehicleId: vehicles["BUS-02"].id,
+      driverId: drivers["Ramesh"].id,
+      cargoWeightKg: 1100,
+      plannedDistanceKm: 110,
+      status: TripStatus.DISPATCHED,
+      createdAt: new Date("2026-07-11"),
+      dispatchedAt: new Date("2026-07-12"),
     },
   });
 

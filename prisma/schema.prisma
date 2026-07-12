@@ -117,6 +117,7 @@ model Trip {
   finalOdometer      Int?
   fuelConsumedLiters Float?
   revenue            Int?
+  cancelReason       String?
   createdAt          DateTime   @default(now())
   dispatchedAt       DateTime?
   completedAt        DateTime?

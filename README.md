@@ -28,6 +28,7 @@ TransitOps provides a centralized platform that allows organizations to manage t
 ### 3.1 Authentication & Authorization
 - Secure login using email and password.
 - Role-Based Access Control (RBAC)
+
 - Only authenticated users can access the application
 
 ### 3.2 Dashboard

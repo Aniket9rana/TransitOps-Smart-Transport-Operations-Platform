@@ -16,3 +16,23 @@ export function formatKg(kg: number): string {
   }
   return `${kg} kg`;
 }
+
+export function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+/** Masks a stored contact number for display: first 5 chars + "xxxxx". */
+export function maskContact(contact: string): string {
+  return `${contact.slice(0, 5)}xxxxx`;
+}
+
+/** Formats a date as "MM/YYYY" for license expiry display. */
+export function formatMonthYear(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${month}/${date.getFullYear()}`;
+}

@@ -1,18 +1,19 @@
-import { Search } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/app/actions/auth";
+import { ROLE_LABELS } from "@/lib/permissions";
+import type { Role } from "@/lib/generated/prisma/enums";
 
-// Auth lands in a later phase — the signed-in user is mocked for now.
-const CURRENT_USER = { name: "Raven K.", role: "Fleet Manager" };
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-export function Topbar() {
+export function Topbar({
+  name,
+  role,
+  initials,
+}: {
+  name: string;
+  role: Role;
+  initials: string;
+}) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-6">
       <div className="relative w-full max-w-sm">
@@ -26,14 +27,17 @@ export function Topbar() {
 
       <div className="flex items-center gap-3">
         <div className="text-right leading-tight">
-          <p className="text-sm font-medium text-foreground">
-            {CURRENT_USER.name}
-          </p>
-          <p className="text-xs text-muted-foreground">{CURRENT_USER.role}</p>
+          <p className="text-sm font-medium text-foreground">{name}</p>
+          <p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p>
         </div>
         <div className="flex size-9 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
-          {getInitials(CURRENT_USER.name)}
+          {initials}
         </div>
+        <form action={logout}>
+          <Button type="submit" variant="ghost" size="icon" title="Logout">
+            <LogOut />
+          </Button>
+        </form>
       </div>
     </header>
   );
