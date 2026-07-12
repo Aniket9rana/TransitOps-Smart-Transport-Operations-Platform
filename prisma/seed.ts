@@ -14,6 +14,14 @@ import { prisma } from "../lib/prisma";
 
 const DEMO_PASSWORD = "transit123";
 
+// Historical trips are dated relative to "now" so the Monthly Revenue chart,
+// fuel efficiency, and ROI always have data spread across the last ~6 months
+// regardless of when the seed is run.
+const NOW = new Date();
+function monthsAgo(months: number, day = 15): Date {
+  return new Date(NOW.getFullYear(), NOW.getMonth() - months, day);
+}
+
 async function clear() {
   await prisma.user.deleteMany();
   await prisma.expense.deleteMany();
@@ -378,6 +386,67 @@ async function main() {
       dispatchedAt: new Date("2026-07-12"),
     },
   });
+
+  // ── Historical COMPLETED trips (last ~6 months) ─────────────────────────
+  // Terminal trips: they DON'T change any vehicle/driver current status (those
+  // stay AVAILABLE/ON_TRIP as set above). Each carries a linked FuelLog so
+  // fuel efficiency, ROI, monthly revenue, and costliest-vehicle all populate.
+  const historicalTrips: {
+    code: string;
+    vehicle: string;
+    driver: string;
+    source: string;
+    destination: string;
+    cargoWeightKg: number;
+    plannedDistanceKm: number;
+    fuelConsumedLiters: number;
+    revenue: number;
+    monthsAgo: number;
+  }[] = [
+    { code: "TR010", vehicle: "TRUCK-11", driver: "Suresh", source: "Gandhinagar Depot", destination: "Rajkot Hub", cargoWeightKg: 4200, plannedDistanceKm: 320, fuelConsumedLiters: 40, revenue: 42000, monthsAgo: 6 },
+    { code: "TR011", vehicle: "VAN-12", driver: "Meera", source: "Ahmedabad Hub", destination: "Nadiad Depot", cargoWeightKg: 520, plannedDistanceKm: 180, fuelConsumedLiters: 22, revenue: 15000, monthsAgo: 6 },
+    { code: "TR012", vehicle: "BUS-05", driver: "Priya", source: "Ahmedabad Hub", destination: "Vadodara Depot", cargoWeightKg: 2400, plannedDistanceKm: 260, fuelConsumedLiters: 34, revenue: 30000, monthsAgo: 5 },
+    { code: "TR013", vehicle: "MINI-07", driver: "Farah", source: "Vatva Industrial Area", destination: "Mehsana Hub", cargoWeightKg: 820, plannedDistanceKm: 140, fuelConsumedLiters: 16, revenue: 12000, monthsAgo: 5 },
+    { code: "TR014", vehicle: "TRUCK-04", driver: "Suresh", source: "Surat Hub", destination: "Ahmedabad Hub", cargoWeightKg: 3900, plannedDistanceKm: 300, fuelConsumedLiters: 38, revenue: 39000, monthsAgo: 4 },
+    { code: "TR015", vehicle: "CAR-01", driver: "Alex", source: "Ahmedabad Hub", destination: "Gandhinagar Depot", cargoWeightKg: 220, plannedDistanceKm: 120, fuelConsumedLiters: 11, revenue: 9000, monthsAgo: 4 },
+    { code: "TR016", vehicle: "VAN-05", driver: "Alex", source: "Rajkot Depot", destination: "Ahmedabad Hub", cargoWeightKg: 460, plannedDistanceKm: 210, fuelConsumedLiters: 24, revenue: 18000, monthsAgo: 3 },
+    { code: "TR017", vehicle: "BUS-02", driver: "Ramesh", source: "Vadodara Depot", destination: "Surat Hub", cargoWeightKg: 2600, plannedDistanceKm: 240, fuelConsumedLiters: 32, revenue: 28000, monthsAgo: 3 },
+    { code: "TR018", vehicle: "TRUCK-11", driver: "Suresh", source: "Gandhinagar Depot", destination: "Bhavnagar Hub", cargoWeightKg: 4100, plannedDistanceKm: 280, fuelConsumedLiters: 35, revenue: 37000, monthsAgo: 2 },
+    { code: "TR019", vehicle: "VAN-12", driver: "Meera", source: "Ahmedabad Hub", destination: "Anand Depot", cargoWeightKg: 540, plannedDistanceKm: 160, fuelConsumedLiters: 19, revenue: 14000, monthsAgo: 1 },
+  ];
+
+  for (const spec of historicalTrips) {
+    const completedAt = monthsAgo(spec.monthsAgo);
+    const dispatchedAt = new Date(completedAt.getFullYear(), completedAt.getMonth(), completedAt.getDate() - 1);
+    const createdAt = new Date(completedAt.getFullYear(), completedAt.getMonth(), completedAt.getDate() - 2);
+    const trip = await prisma.trip.create({
+      data: {
+        code: spec.code,
+        source: spec.source,
+        destination: spec.destination,
+        vehicleId: vehicles[spec.vehicle].id,
+        driverId: drivers[spec.driver].id,
+        cargoWeightKg: spec.cargoWeightKg,
+        plannedDistanceKm: spec.plannedDistanceKm,
+        status: TripStatus.COMPLETED,
+        finalOdometer: vehicles[spec.vehicle].odometer,
+        fuelConsumedLiters: spec.fuelConsumedLiters,
+        revenue: spec.revenue,
+        createdAt,
+        dispatchedAt,
+        completedAt,
+      },
+    });
+    await prisma.fuelLog.create({
+      data: {
+        vehicleId: vehicles[spec.vehicle].id,
+        tripId: trip.id,
+        date: completedAt,
+        liters: spec.fuelConsumedLiters,
+        cost: Math.round(spec.fuelConsumedLiters * 78),
+      },
+    });
+  }
 
   await prisma.maintenanceLog.create({
     data: {
