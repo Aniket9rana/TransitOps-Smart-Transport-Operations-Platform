@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/status-badge";
+import { useSort, SortHeader } from "@/components/data-table-sort";
 import { cn } from "@/lib/utils";
 import { formatMonthYear, maskContact } from "@/lib/format";
 import { isLicenseExpired } from "@/lib/eligibility";
@@ -136,6 +137,21 @@ export function DriverTable({
     });
   }, [drivers, search, statusFilter]);
 
+  const { sorted, ...sort } = useSort<DriverRow, string>(
+    filteredDrivers,
+    {
+      name: (d) => d.name,
+      licenseNumber: (d) => d.licenseNumber,
+      licenseCategory: (d) => d.licenseCategory,
+      licenseExpiry: (d) => d.licenseExpiry.getTime(),
+      tripCompletionRate: (d) =>
+        d.tripCompletionRate ? parseInt(d.tripCompletionRate, 10) : -1,
+      safetyScore: (d) => d.safetyScore,
+      status: (d) => d.status,
+    },
+    "name"
+  );
+
   function handleDelete(driver: DriverRow) {
     if (!window.confirm(`Delete driver ${driver.name}? This cannot be undone.`)) {
       return;
@@ -188,19 +204,19 @@ export function DriverTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Driver</TableHead>
-              <TableHead>License No</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Expiry</TableHead>
+              <TableHead><SortHeader sortKey="name" label="Driver" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="licenseNumber" label="License No" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="licenseCategory" label="Category" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="licenseExpiry" label="Expiry" state={sort} /></TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead>Trip Compl.</TableHead>
-              <TableHead>Safety</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead><SortHeader sortKey="tripCompletionRate" label="Trip Compl." state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="safetyScore" label="Safety" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="status" label="Status" state={sort} /></TableHead>
               {canManage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredDrivers.map((driver) => {
+            {sorted.map((driver) => {
               const expired = isLicenseExpired(driver);
               return (
                 <TableRow key={driver.id}>

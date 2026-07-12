@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/status-badge";
+import { useSort, SortHeader } from "@/components/data-table-sort";
 import { formatINR, formatKg } from "@/lib/format";
 import { VehicleType, VehicleStatus } from "@/lib/generated/prisma/enums";
 import type { Vehicle } from "@/lib/generated/prisma/client";
@@ -74,6 +75,20 @@ export function FleetTable({
       return true;
     });
   }, [vehicles, typeFilter, statusFilter, search]);
+
+  const { sorted, ...sort } = useSort<Vehicle, string>(
+    filteredVehicles,
+    {
+      registrationNumber: (v) => v.registrationNumber,
+      name: (v) => v.name,
+      type: (v) => v.type,
+      maxLoadKg: (v) => v.maxLoadKg,
+      odometer: (v) => v.odometer,
+      acquisitionCost: (v) => v.acquisitionCost,
+      status: (v) => v.status,
+    },
+    "registrationNumber"
+  );
 
   function handleRetire(vehicle: Vehicle) {
     startTransition(async () => {
@@ -163,18 +178,18 @@ export function FleetTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Reg. No.</TableHead>
-              <TableHead>Name/Model</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Odometer</TableHead>
-              <TableHead>Acq. Cost</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead><SortHeader sortKey="registrationNumber" label="Reg. No." state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="name" label="Name/Model" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="type" label="Type" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="maxLoadKg" label="Capacity" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="odometer" label="Odometer" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="acquisitionCost" label="Acq. Cost" state={sort} /></TableHead>
+              <TableHead><SortHeader sortKey="status" label="Status" state={sort} /></TableHead>
               {canManage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredVehicles.map((vehicle) => (
+            {sorted.map((vehicle) => (
               <TableRow key={vehicle.id}>
                 <TableCell className="font-medium text-foreground">
                   {vehicle.registrationNumber}
