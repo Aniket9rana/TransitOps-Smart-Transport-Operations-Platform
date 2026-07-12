@@ -10,7 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "demo:reset": "prisma generate && prisma db push --force-reset --accept-data-loss && tsx prisma/seed.ts"
+    "demo:reset": "prisma generate && prisma db push && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
